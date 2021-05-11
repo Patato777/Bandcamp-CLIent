@@ -1,9 +1,12 @@
 import curses
 import logging
+import os
 import sys
 import time
 
 from pynput import keyboard
+
+dirname = os.path.dirname(__file__)
 
 
 class Wrapper:
@@ -26,40 +29,36 @@ class Wrapper:
         self.title = self.stdscr.derwin(3, curses.COLS - 2, 1, 1)
         try:
             self.title.addstr(2, 0, '─' * (curses.COLS - 2))
-        finally:
+        except curses.error:
             logging.debug('Nothing wrong, just an old curses issue')
         self.menuwin = self.mainwin.derwin(curses.LINES - 6, curses.COLS - 2, 4, 1)
         self.time_bar = ProgBar(self.stdscr, curses.LINES - 1)
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
-        # Just to test, remove when done
-        self.time_bar.set_total_time(100)
-        self.bind(keyboard.Key.left, lambda: self.time_bar.update(self.time_bar.current - 1))
-        self.bind(keyboard.Key.right, lambda: self.time_bar.update(self.time_bar.current + 1))
-        self.menu = self.make_menu([['20', 'ALBUM', 'Super Meat Boy! - Digital Special Edition Soundtrack'],
-                                    ['21', 'TRACK', 'Dun Dun Dun']] * 20)
-        ####
         self.commands = {b'quit': self.exit}
         self.cmderror = False
         logging.debug("Let's start!")
         self.stop = False
-        self.mainloop()
 
     def start_screen(self):
-        with open('./resources/play bc button.utf8ans', encoding='utf-8') as file:
+        with open(dirname + '/resources/play bc button.utf8ans', encoding='utf-8') as file:
             for k, line in enumerate(file):
                 y = 0
                 for part in line.split('['):
                     if part.startswith('1;'):
                         curses.init_pair(self.color_dict[part[2:4]], self.color_dict[part[2:4]], curses.COLOR_BLACK)
-                        self.stdscr.addstr(k, y, part[5:], curses.color_pair(self.color_dict[part[2:4]]))
+                        try:
+                            self.stdscr.addstr(k, y, part[5:], curses.color_pair(self.color_dict[part[2:4]]))
+                        except curses.error:
+                            logging.debug('Nothing wrong, just an old curses issue (line 61)')
                         y += len(part[5:])
                     else:
                         beg = 2 if (len(part) > 1 and part[1] == 'm') else 0
                         try:
                             self.stdscr.addstr(k, y, part[beg:])
-                        finally:
-                            logging.debug('Nothing wrong, just an old curses issue')
+                        except curses.error:
+                            logging.debug('Nothing wrong, just an old curses issue (line 68)')
+                            logging.debug(f'COLS: {curses.COLS}, LINES: {curses.LINES}, part: {part}, line: {k}, beg: {beg}')
                         y += len(part[2:])
         self.stdscr.border()
 
@@ -69,7 +68,7 @@ class Wrapper:
     def unbind(self, key):
         try:
             del self.binds[key]
-        finally:
+        except KeyError:
             return False
 
     def new_command(self, command, function):
@@ -87,12 +86,9 @@ class Wrapper:
     def make_menu(self, items):
         self.menuwin.clear()
         menu = Menu(items, self.menuwin)
-        self.bind(keyboard.Key.up, self.menu.up)
-        self.bind(keyboard.Key.down, self.menu.down)
+        self.bind(keyboard.Key.up, menu.up)
+        self.bind(keyboard.Key.down, menu.down)
         return menu
-
-    def build(self):
-        pass
 
     def getcmd(self):
         self.listener.stop()
@@ -178,7 +174,7 @@ class Menu:
         for line, string in enumerate(self.strings[self.top:self.end]):
             try:
                 self.window.addstr(line, 0, string)
-            finally:
+            except curses.error:
                 logging.debug('Nothing wrong, just an old curses issue')
         self.window.refresh()
 
@@ -186,11 +182,11 @@ class Menu:
         if item in range(self.top, self.end):
             try:
                 self.window.addstr(self.selected - self.top, 0, self.strings[self.selected])
-            finally:
+            except curses.error:
                 logging.debug('Nothing wrong, just an old curses issue')
             try:
                 self.window.addstr(item - self.top, 0, self.strings[item], curses.A_STANDOUT)
-            finally:
+            except curses.error:
                 logging.debug('Nothing wrong, just an old curses issue')
             logging.debug('Still in')
         elif item < self.top:
@@ -221,7 +217,7 @@ class ProgBar:
         self.char = char
         try:
             self.scr.addstr(self.y, 0, self.char[1] + self.char[2] * (curses.COLS - 1))
-        finally:
+        except curses.error:
             logging.debug('Nothing wrong, just an old curses issue')
 
     def set_total_time(self, total_time):
@@ -236,7 +232,7 @@ class ProgBar:
         time_str = '[' + cur_str + '/' + self.totalt_str + ']'
         try:
             self.scr.addstr(self.y, self.time_x - 1, time_str)
-        finally:
+        except curses.error:
             logging.debug('Nothing wrong, just an old curses issue')
         self.update(0)
 
@@ -255,4 +251,8 @@ class ProgBar:
 
 
 logging.basicConfig(filename='main.log', level=logging.DEBUG)
-logging.debug('--------------')
+logging.debug(f'-------{time.asctime()}-------')
+
+
+def create_wrapper():
+    return curses.wrapper(Wrapper)
