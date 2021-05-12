@@ -25,7 +25,7 @@ class Wrapper:
         self.mainwin = self.stdscr.derwin(curses.LINES - 1, curses.COLS, 0, 0)
         self.mainwin.border()
         self.mainwin.addstr(0, 2, 'Volume─┤          ├')
-        self.update_vol(80)
+        self.update_vol(100)
         self.title = self.stdscr.derwin(3, curses.COLS - 2, 1, 1)
         try:
             self.title.addstr(2, 0, '─' * (curses.COLS - 2))
@@ -81,7 +81,10 @@ class Wrapper:
 
     def update_title(self, title, subtitle):
         self.title.addstr(0, 0, title.center(curses.COLS - 2))
+        logging.debug(title)
         self.title.addstr(1, 0, subtitle.center(curses.COLS - 2))
+        self.title.refresh()
+        logging.debug(subtitle)
 
     def make_menu(self, items):
         self.menuwin.clear()
@@ -146,7 +149,7 @@ class Wrapper:
 class Menu:
     def __init__(self, items, win):
         self.window = win
-        self.items = items
+        self.items = items if items != list() else [['Nothing']]
         self.miny, self.minx = self.window.getbegyx()
         self.maxy, self.maxx = self.window.getmaxyx()
         self.lines = len(self.items)
@@ -166,8 +169,8 @@ class Menu:
             self.strings.append(totalstring)
         self.top, self.end = 0, self.maxy
         self.show(0)
-        self.selected = 0
-        self.select(0)
+        self.highlighted = 0
+        self.highlight(0)
 
     def show(self, begin):
         self.top, self.end = begin, begin + self.maxy
@@ -178,10 +181,10 @@ class Menu:
                 logging.debug('Nothing wrong, just an old curses issue')
         self.window.refresh()
 
-    def select(self, item):
+    def highlight(self, item):
         if item in range(self.top, self.end):
             try:
-                self.window.addstr(self.selected - self.top, 0, self.strings[self.selected])
+                self.window.addstr(self.highlighted - self.top, 0, self.strings[self.highlighted])
             except curses.error:
                 logging.debug('Nothing wrong, just an old curses issue')
             try:
@@ -191,23 +194,26 @@ class Menu:
             logging.debug('Still in')
         elif item < self.top:
             self.show(item)
-            self.select(item)
+            self.highlight(item)
         elif item > self.end:
             self.show(item - self.maxy)
-            self.select(item)
+            self.highlight(item)
         elif item == self.end:
             self.show(self.top + 1)
-            self.select(item)
-        self.selected = item
+            self.highlight(item)
+        self.highlighted = item
         self.window.refresh()
 
+    def select(self):
+        return self.items[self.highlighted]
+
     def up(self):
-        if self.selected > 0:
-            self.select(self.selected - 1)
+        if self.highlighted > 0:
+            self.highlight(self.highlighted - 1)
 
     def down(self):
-        if self.selected < self.lines - 1:
-            self.select(self.selected + 1)
+        if self.highlighted < self.lines - 1:
+            self.highlight(self.highlighted + 1)
 
 
 class ProgBar:
