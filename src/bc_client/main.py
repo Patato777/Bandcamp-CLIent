@@ -59,12 +59,13 @@ class Main:
 
     def select(self):
         selected = self.menu.select()
-        if selected != ['Nothing']:
+        if selected is not None:
             if selected.category == 'Menu':
                 self.menu = self.fav_menu(selected.name)
             elif selected.category == 'Artist':
                 self.current = bc_api.Webpage(selected.url).object()
-                items = [MenuItem(mus[:2], mus[1:], mus[0].capitalize()) for mus in self.current.music]
+                logging.debug(self.current.music[0])
+                items = [MenuItem(list(reversed(mus[:2])), mus[1:], mus[0].capitalize()) for mus in self.current.music]
                 self.menu = self.wrapper.make_menu(items)
                 self.wrapper.update_title(selected.name, '')
             elif selected.category == 'Album':
@@ -78,6 +79,7 @@ class Main:
             elif selected.category == 'Track':
                 if selected.loaded:
                     playlist = [item.track.mp3 for item in self.menu.content[self.menu.highlighted:]]
+                    logging.debug(playlist)
                     self.player.play_list(playlist)
                 else:
                     self.current = bc_api.Webpage(selected.url).object()
@@ -87,7 +89,7 @@ class Main:
                         self.current, 'Track')])
                     self.wrapper.update_title(self.current.json['name'],
                                               f"{self.current.json['inAlbum']['name']} - {self.current.json['byArtist']['name']}")
-            else:
+            elif selected.category == 'Function':
                 selected.func()
 
     def new_fav(self, fav):
@@ -138,7 +140,7 @@ class MenuItem:
         self.repr = rep
         self.category = category
         self.loaded = False
-        if category == 'Track' and type(data_or_url) != str:
+        if category == 'Track' and type(data_or_url) == bc_api.Track:
             self.track = data_or_url
             self.loaded = True
         elif category == 'Menu':

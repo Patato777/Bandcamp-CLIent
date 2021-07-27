@@ -196,7 +196,8 @@ class Menu:
         self.window.refresh()
 
     def select(self):
-        return self.content[self.highlighted]
+        if self.content:
+            return self.content[self.highlighted]
 
     def up(self):
         if self.highlighted > 0:
@@ -212,6 +213,7 @@ class ProgBar:
         self.scr = scr
         self.y = y
         self.char = char
+        self.total_time = 0
         try:
             self.scr.addstr(self.y, 0, self.char[1] + self.char[2] * (curses.COLS - 1))
         except curses.error:
@@ -231,6 +233,7 @@ class ProgBar:
             self.scr.addstr(self.y, self.time_x - 1, time_str)
         except curses.error:
             logging.debug('Nothing wrong, just an old curses issue')
+        logging.debug(self.total_time)
         self.update(0)
 
     def update(self, new):
@@ -245,6 +248,10 @@ class ProgBar:
             self.scr.addstr(self.y, progress, self.char[1] + self.char[2] * length)
         self.current = new
         self.progress = progress
+
+
+def stop():
+    curses.endwin()
 
 
 logging.basicConfig(filename='main.log', level=logging.DEBUG)

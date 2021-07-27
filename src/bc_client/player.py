@@ -1,3 +1,5 @@
+import logging
+
 import vlc
 
 
@@ -16,6 +18,6 @@ class Player:
         self.playlist = vlc.MediaList()
         for song in playlist:
             self.playlist.add_media(vlc.Media(song))
+        self.list_player.stop()
         self.list_player.set_media_list(self.playlist)
-        self.player.stop()
         self.list_player.play()
