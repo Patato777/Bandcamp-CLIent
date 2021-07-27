@@ -117,6 +117,18 @@ class Main:
         self.menu = self.wrapper.make_menu(items)
         self.menu.highlight(highlighted)
 
+    def decr_volume(self):
+        volume = self.player.player.audio_get_volume() - 2
+        logging.debug(volume)
+        self.player.set_volume(volume)
+        self.wrapper.update_vol(volume)
+
+    def incr_volume(self):
+        volume = self.player.player.audio_get_volume() + 2
+        logging.debug(volume)
+        self.player.set_volume(volume)
+        self.wrapper.update_vol(volume)
+
     def mainloop(self):
         while not self.stop:
             self.wrapper.stdscr.refresh()

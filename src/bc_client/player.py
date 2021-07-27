@@ -21,3 +21,9 @@ class Player:
         self.list_player.stop()
         self.list_player.set_media_list(self.playlist)
         self.list_player.play()
+
+    def stop(self):
+        self.player.stop()
+
+    def set_volume(self, vol):
+        self.player.audio_set_volume(vol)
