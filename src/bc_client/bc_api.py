@@ -45,7 +45,11 @@ class Band:
         self.soup = soup
         self.url = url
         self.root = re.search('^https://[^/]*(?=/|$)', self.url).group()
-        self.music_urls = [self.root + mus['href'] for mus in soup.find('ol', id='music-grid').find_all('a')]
+        music_names = [m.p.text.strip().split('\n')[0].strip() for m in soup.find('ol', id='music-grid').find_all('li')]
+        music_urls = [self.root + mus['href'] for mus in soup.find('ol', id='music-grid').find_all('a')]
+        music_types = [m['data-item-id'].split('-')[0] for m in soup.find('ol', id='music-grid').find_all('li')]
+        self.music = [[*mus] for mus in zip(music_types, music_names, music_urls)]
+        self.name = soup.find('meta', attrs={'name': 'title'})['content']
 
 
 class Search:
@@ -56,19 +60,8 @@ class Search:
         self.url = url
         self.query = query
         self.soup = soup
-        self.items = [Search_item(li) for li in self.soup.find('ul', class_='result-items')('li')]
-        next = soup.find('a', class_='next')
-        if next != None:
-            page = re.search('page=\d+(?=&)', next.attrs['href']).group()
-            self.next = self.url + '&' + page
-        else:
-            self.next = None
-        prev = soup.find('a', class_='prev')
-        if prev != None:
-            page = re.search('page=\d+(?=&)', prev.attrs['href'])
-            self.prev = self.url + '&' + page
-        else:
-            self.prev = None
+        self.items = [SearchItem(li) for li in self.soup.find('ul', class_='result-items')('li')]
+        self.prev, self.next = None, None
 
     def select_nth(self, n):
         item = self.items[n]
@@ -81,8 +74,23 @@ class Search:
         else:
             return web_page.object()
 
+    def is_there_more(self):
+        return self.soup.find('a', class_='next') is not None
 
-class Search_item:
+    def next_page(self):
+        nextp = self.soup.find('a', class_='next')
+        if nextp is not None:
+            self.next = re.search(r'(?<=page=)\d+(?=&)', nextp.attrs['href']).group()
+            return Webpage(self.root, {'q': self.query, 'page': self.next}).object()
+
+    def prev_page(self):
+        prev = self.soup.find('a', class_='prev')
+        if prev is not None:
+            self.prev = re.search(r'(?<=page=)\d+(?=&)', prev.attrs['href'])
+            return Webpage(self.root, {'q': self.query, 'page': self.prev}).object()
+
+
+class SearchItem:
     def __init__(self, soup):
         self.soup = soup
         art = self.soup.img
