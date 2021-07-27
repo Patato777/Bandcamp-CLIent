@@ -19,17 +19,29 @@ class Main:
         self.wrapper = curses_UI.create_wrapper()
         if os.path.isfile(CONFIGS + '/favorites'):
             with open(CONFIGS + '/favorites', 'r') as fav:
-                self.favorites = eval(fav.read())
-        else:
-            self.favorites = {'Artists': list(), 'Albums': list(), 'Tracks': list()}
+                for line in fav:
+                    item, params = line.split(': ')
+                    if item == 'ARTIST':
+                        self.favorites['Artists'].append(bc_api.Band(*eval(params)))
+                    elif item == 'ALBUM':
+                        self.favorites['Albums'].append(bc_api.Album(*params, loaded=False))
+                    elif item == 'TRACK':
+                        self.favorites['Tracks'].append(bc_api.Track(*eval(params), loaded=False))
+        self.playlist = list()
         self.menu = self.fav_menu()
+        self.current = 'Favorites'
+        self.wrapper.bind(keyboard.Key.enter, self.select)
+        self.wrapper.new_command('favorites', lambda: self.change_menu(self.fav_menu()), 0)
+        self.wrapper.new_command('search', self.search, 1)
         self.wrapper.mainloop()
+
+    def change_menu(self, menu):
+        self.menu = menu
 
     def fav_menu(self, category='base'):
         if category == 'base':
-            menu = self.wrapper.make_menu([['Artists'], ['Albums'], ['Tracks']])
+            menu = self.wrapper.make_menu([MenuItem([name], name, 'Menu') for name in self.favorites.keys()])
             self.wrapper.update_title('Favorites', '')
-            self.wrapper.bind(keyboard.Key.enter, lambda: self.fav_menu(menu.select()[0]))
         else:
             menu = self.wrapper.make_menu(self.favorites[category])
             self.wrapper.update_title('Favorites', category)

@@ -35,7 +35,7 @@ class Wrapper:
         self.time_bar = ProgBar(self.stdscr, curses.LINES - 2)
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
-        self.commands = {b'quit': self.exit}
+        self.commands = {'quit': (self.exit, 0)}
         self.cmderror = False
         logging.debug("Let's start!")
         self.stop = False
@@ -72,8 +72,8 @@ class Wrapper:
         except KeyError:
             return False
 
-    def new_command(self, command, function):
-        self.commands.update({command: function})
+    def new_command(self, command, function, arity):
+        self.commands.update({command: (function, arity)})
 
     def update_vol(self, vol):
         self.mainwin.addstr(0, 9, f'|          |')
@@ -96,9 +96,9 @@ class Wrapper:
 
     def getcmd(self):
         self.listener.stop()
-        cmd = self.cmdentry()
-        if cmd in self.commands.keys():
-            self.commands[cmd]()
+        cmd, *args = self.cmdentry().split(' ')
+        if cmd in self.commands.keys() and self.commands[cmd][1] == len(args):
+            self.commands[cmd][0](*args)
             self.cmdwin.clear()
         else:
             self.cmdwin.addstr(0, 0, 'Unknown command', curses.A_STANDOUT)
@@ -120,7 +120,8 @@ class Wrapper:
         cmd = self.cmdwin.getstr(0, 1)
         curses.noecho()
         curses.curs_set(0)
-        return cmd
+        logging.debug(cmd.decode())
+        return cmd.decode()
 
     def on_press(self, key):
         self.stdscr.nodelay(True)
