@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import sys
 
 from pynput import keyboard
 
@@ -34,9 +35,15 @@ class Main:
         self.menu = self.fav_menu()
         self.current = 'Favorites'
         self.wrapper.bind(keyboard.Key.enter, self.select)
+        self.wrapper.bind('q', self.exit)
+        self.wrapper.bind('p', self.player.pause)
+        self.wrapper.bind(keyboard.Key.left, self.decr_volume)
+        self.wrapper.bind(keyboard.Key.right, self.incr_volume)
         self.wrapper.new_command('favorites', lambda: self.change_menu(self.fav_menu()), 0)
         self.wrapper.new_command('search', self.search, 1)
-        self.wrapper.mainloop()
+        self.wrapper.new_command('quit', self.exit, 0)
+        self.stop = False
+        self.mainloop()
 
     def change_menu(self, menu):
         self.menu = menu
@@ -109,13 +116,21 @@ class Main:
         self.menu.highlight(highlighted)
 
     def mainloop(self):
-        while True:
+        while not self.stop:
+            self.wrapper.stdscr.refresh()
             if self.player.playing():
                 if self.player.total_time() != self.wrapper.time_bar.total_time:
-                    self.wrapper.time_bar.set_total_time(int(self.player.total_time() / 1000))
+                    logging.debug(self.player.total_time())
+                    self.wrapper.time_bar.set_total_time(self.player.total_time())
                 if self.player.time() != self.wrapper.time_bar.current:
                     self.wrapper.time_bar.update(self.player.time())
             time.sleep(0.5)
+
+    def exit(self):
+        self.stop = True
+        self.player.stop()
+        curses_UI.stop()
+        sys.exit()
 
 
 class MenuItem:

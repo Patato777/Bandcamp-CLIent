@@ -1,7 +1,6 @@
 import curses
 import logging
 import os
-import sys
 import time
 
 from pynput import keyboard
@@ -19,7 +18,7 @@ class Wrapper:
         self.start_screen()
         curses.curs_set(0)
         self.stdscr.getch()
-        self.binds = {'/': self.getcmd, 'q': self.exit}
+        self.binds = {'/': self.getcmd}
         self.stdscr.clear()
         self.cmdwin = self.stdscr.derwin(1, curses.COLS, curses.LINES - 1, 0)
         self.mainwin = self.stdscr.derwin(curses.LINES - 2, curses.COLS, 0, 0)
@@ -35,10 +34,9 @@ class Wrapper:
         self.time_bar = ProgBar(self.stdscr, curses.LINES - 2)
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
-        self.commands = {'quit': (self.exit, 0)}
+        self.commands = dict()
         self.cmderror = False
         logging.debug("Let's start!")
-        self.stop = False
 
     def start_screen(self):
         with open(dirname + '/resources/play bc button.utf8ans', encoding='utf-8') as file:
@@ -107,11 +105,6 @@ class Wrapper:
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
 
-    def exit(self):
-        curses.endwin()
-        self.stop = True
-        sys.exit()
-
     def cmdentry(self):
         self.cmdwin.clear()
         self.cmdwin.addstr(0, 0, '/')
@@ -141,11 +134,6 @@ class Wrapper:
             self.binds[key]()
         else:
             logging.debug('Key pressed: ' + str(key))
-
-    def mainloop(self):
-        self.stdscr.refresh()
-        while not self.stop:
-            time.sleep(1)
 
 
 class Menu:
