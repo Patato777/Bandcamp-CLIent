@@ -1,5 +1,6 @@
 import vlc
 
+
 class Player:
     def __init__(self):
         self.player = vlc.MediaPlayer()

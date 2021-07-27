@@ -22,7 +22,7 @@ class Wrapper:
         self.binds = {'/': self.getcmd, 'q': self.exit}
         self.stdscr.clear()
         self.cmdwin = self.stdscr.derwin(1, curses.COLS, curses.LINES - 1, 0)
-        self.mainwin = self.stdscr.derwin(curses.LINES - 1, curses.COLS, 0, 0)
+        self.mainwin = self.stdscr.derwin(curses.LINES - 2, curses.COLS, 0, 0)
         self.mainwin.border()
         self.mainwin.addstr(0, 2, 'Volume─┤          ├')
         self.update_vol(100)
@@ -31,8 +31,8 @@ class Wrapper:
             self.title.addstr(2, 0, '─' * (curses.COLS - 2))
         except curses.error:
             logging.debug('Nothing wrong, just an old curses issue')
-        self.menuwin = self.mainwin.derwin(curses.LINES - 6, curses.COLS - 2, 4, 1)
-        self.time_bar = ProgBar(self.stdscr, curses.LINES - 1)
+        self.menuwin = self.mainwin.derwin(curses.LINES - 7, curses.COLS - 2, 4, 1)
+        self.time_bar = ProgBar(self.stdscr, curses.LINES - 2)
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
         self.commands = {b'quit': self.exit}
@@ -58,7 +58,8 @@ class Wrapper:
                             self.stdscr.addstr(k, y, part[beg:])
                         except curses.error:
                             logging.debug('Nothing wrong, just an old curses issue (line 68)')
-                            logging.debug(f'COLS: {curses.COLS}, LINES: {curses.LINES}, part: {part}, line: {k}, beg: {beg}')
+                            logging.debug(
+                                f'COLS: {curses.COLS}, LINES: {curses.LINES}, part: {part}, line: {k}, beg: {beg}')
                         y += len(part[2:])
         self.stdscr.border()
 
@@ -147,18 +148,19 @@ class Wrapper:
 
 
 class Menu:
-    def __init__(self, items, win):
+    def __init__(self, content, win):
         self.window = win
-        self.items = items if items != list() else [['Nothing']]
+        self.content = content
         self.miny, self.minx = self.window.getbegyx()
         self.maxy, self.maxx = self.window.getmaxyx()
-        self.lines = len(self.items)
-        self.rows = len(self.items[0])
-        self.rowwidth = [max([len(i[r]) for i in self.items]) for r in range(self.rows)]
+        items = [c.repr for c in content] if content != list() else [['Nothing']]
+        self.lines = len(self.content)
+        self.rows = len(items[0])
+        self.rowwidth = [max([len(i[r]) for i in items]) for r in range(self.rows)]
         maxrow = self.rowwidth.index(max(self.rowwidth))
         self.rowwidth[maxrow] -= sum(self.rowwidth) + self.rows - self.maxx
         self.strings = list()
-        for line, item in enumerate(self.items):
+        for line, item in enumerate(items):
             totalstring = str()
             for row, elem in enumerate(item):
                 if len(elem) > self.rowwidth[row] > 3:
@@ -205,7 +207,7 @@ class Menu:
         self.window.refresh()
 
     def select(self):
-        return self.items[self.highlighted]
+        return self.content[self.highlighted]
 
     def up(self):
         if self.highlighted > 0:

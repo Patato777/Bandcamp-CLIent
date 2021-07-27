@@ -1,6 +1,9 @@
+import logging
 import os
+import time
 
 from pynput import keyboard
+
 from src.bc_client import bc_api
 from src.bc_client import curses_UI
 
@@ -12,7 +15,7 @@ if not os.path.isdir(CONFIGS):
 
 class Main:
     def __init__(self):
-        self.bandcamp = bc_api.Bandcamp
+        self.bandcamp = bc_api.Bandcamp()
         self.wrapper = curses_UI.create_wrapper()
         if os.path.isfile(CONFIGS + '/favorites'):
             with open(CONFIGS + '/favorites', 'r') as fav:
